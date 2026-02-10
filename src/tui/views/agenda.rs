@@ -18,10 +18,11 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     for idx in scroll..end {
         let agenda_item = &app.agenda_items[idx];
         let is_selected = idx == app.agenda_cursor;
-        let symbol_color = match agenda_item.task.state {
-            TaskState::InProgress => Color::Rgb(255, 165, 0),
+        let dot_color = match agenda_item.task.state {
+            TaskState::Todo => Color::Red,
             TaskState::OnDeck => Color::Rgb(100, 149, 237),
-            _ => Color::White,
+            TaskState::InProgress => Color::Yellow,
+            TaskState::Done => Color::Green,
         };
 
         let style = if is_selected && is_moving {
@@ -59,8 +60,8 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
         items.push(ListItem::new(Line::from(vec![
             Span::styled(prefix.to_string(), prefix_style),
             Span::styled(
-                format!("{} ", agenda_item.task.state.symbol()),
-                Style::default().fg(symbol_color),
+                format!("{} ", agenda_item.task.state.dot()),
+                Style::default().fg(dot_color),
             ),
             Span::styled(agenda_item.task.text.clone(), style),
             Span::styled(

@@ -141,7 +141,7 @@ impl App {
                     nodes.push(TreeNode {
                         kind: TreeNodeKind::Task { cat_idx, proj_idx, task_idx },
                         depth: 2,
-                        display: format!("{} {}", task.state.symbol(), task.text),
+                        display: task.text.clone(),
                     });
 
                     if has_notes && !task_collapsed {

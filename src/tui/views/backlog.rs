@@ -5,7 +5,16 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use ratatui::Frame;
 
 use crate::app::App;
-use crate::model::TreeNodeKind;
+use crate::model::{TaskState, TreeNodeKind};
+
+fn dot_color(state: TaskState) -> Color {
+    match state {
+        TaskState::Todo => Color::Red,
+        TaskState::OnDeck => Color::Rgb(100, 149, 237),
+        TaskState::InProgress => Color::Yellow,
+        TaskState::Done => Color::Green,
+    }
+}
 
 pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     let visible_height = area.height.saturating_sub(2) as usize; // borders
@@ -22,8 +31,18 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
 
         let indent = "    ".repeat(node.depth as usize);
 
+        // Determine task state dot for task nodes
+        let task_state = match &node.kind {
+            TreeNodeKind::Task { cat_idx, proj_idx, task_idx } => {
+                app.doc.categories.get(*cat_idx)
+                    .and_then(|c| c.projects.get(*proj_idx))
+                    .and_then(|p| p.tasks.get(*task_idx))
+                    .map(|t| t.state)
+            }
+            _ => None,
+        };
+
         let (line, style) = if is_selected && is_moving {
-            // Moving item gets a distinct magenta highlight
             let style = Style::default()
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD);
@@ -71,19 +90,32 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
             " "
         };
 
-        items.push(ListItem::new(Line::from(vec![
-            Span::styled(prefix.to_string(), if is_selected {
-                if is_moving {
-                    Style::default().fg(Color::Magenta)
-                } else {
-                    Style::default().fg(Color::Yellow)
-                }
+        let prefix_style = if is_selected {
+            if is_moving {
+                Style::default().fg(Color::Magenta)
             } else {
-                Style::default()
-            }),
+                Style::default().fg(Color::Yellow)
+            }
+        } else {
+            Style::default()
+        };
+
+        let mut spans = vec![
+            Span::styled(prefix.to_string(), prefix_style),
             Span::styled(indent, Style::default()),
-            Span::styled(line, style),
-        ])));
+        ];
+
+        // Add colored dot for task nodes
+        if let Some(state) = task_state {
+            spans.push(Span::styled(
+                format!("{} ", state.dot()),
+                Style::default().fg(dot_color(state)),
+            ));
+        }
+
+        spans.push(Span::styled(line, style));
+
+        items.push(ListItem::new(Line::from(spans)));
     }
 
     if items.is_empty() {

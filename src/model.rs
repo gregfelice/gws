@@ -19,6 +19,10 @@ impl TaskState {
         }
     }
 
+    pub fn dot(self) -> &'static str {
+        "●"
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             TaskState::Todo => "Todo",
