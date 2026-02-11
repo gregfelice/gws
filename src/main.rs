@@ -3,6 +3,7 @@ mod engine;
 mod model;
 mod parser;
 mod serializer;
+mod theme;
 mod tui;
 mod watcher;
 
@@ -87,8 +88,10 @@ fn main() -> Result<()> {
 
     let mut app = App::new(doc, file_path.clone());
 
-    // Restore collapse state
-    app.collapse = load_collapse_state(&file_path);
+    // Restore collapse state and theme
+    let state = load_collapse_state(&file_path);
+    app.theme_index = theme::Theme::by_name(&state.theme_name);
+    app.collapse = state;
     app.rebuild_tree();
 
     // Set up file watcher
@@ -117,7 +120,8 @@ fn main() -> Result<()> {
         save_atomic(&app.file_path, &content)?;
     }
 
-    // Save collapse state
+    // Save collapse state and theme
+    app.collapse.theme_name = app.theme().name.to_string();
     save_collapse_state(&app.file_path, &app.collapse);
 
     result

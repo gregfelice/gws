@@ -198,6 +198,7 @@ pub struct CollapseState {
     pub collapsed_categories: HashSet<usize>,
     pub collapsed_projects: HashSet<(usize, usize)>,
     pub collapsed_tasks: HashSet<(usize, usize, usize)>,
+    pub theme_name: String,
 }
 
 impl CollapseState {
@@ -206,11 +207,15 @@ impl CollapseState {
             collapsed_categories: HashSet::new(),
             collapsed_projects: HashSet::new(),
             collapsed_tasks: HashSet::new(),
+            theme_name: String::new(),
         }
     }
 
     pub fn serialize(&self) -> String {
         let mut lines = Vec::new();
+        if !self.theme_name.is_empty() {
+            lines.push(format!("theme:{}", self.theme_name));
+        }
         for idx in &self.collapsed_categories {
             lines.push(format!("cat:{}", idx));
         }
@@ -227,7 +232,9 @@ impl CollapseState {
         let mut state = Self::new();
         for line in content.lines() {
             let line = line.trim();
-            if let Some(rest) = line.strip_prefix("cat:") {
+            if let Some(rest) = line.strip_prefix("theme:") {
+                state.theme_name = rest.to_string();
+            } else if let Some(rest) = line.strip_prefix("cat:") {
                 if let Ok(idx) = rest.parse() {
                     state.collapsed_categories.insert(idx);
                 }

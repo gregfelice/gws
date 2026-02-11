@@ -1,5 +1,5 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Frame;
@@ -24,6 +24,7 @@ fn centered_rect(percent_x: u16, height: u16, area: Rect) -> Rect {
 }
 
 pub fn draw_input_dialog(frame: &mut Frame, app: &App, title: &str) {
+    let theme = app.theme();
     let area = centered_rect(50, 3, frame.area());
     frame.render_widget(Clear, area);
 
@@ -35,16 +36,16 @@ pub fn draw_input_dialog(frame: &mut Frame, app: &App, title: &str) {
     };
 
     let style = if app.input_buffer.is_empty() {
-        Style::default().fg(Color::DarkGray)
+        Style::default().fg(theme.dialog_placeholder)
     } else {
-        Style::default().fg(Color::White)
+        Style::default().fg(theme.dialog_text)
     };
 
     let input = Paragraph::new(Line::from(Span::styled(&display_text, style))).block(
         Block::default()
             .title(format!(" {} ", title))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow)),
+            .border_style(Style::default().fg(theme.dialog_border)),
     );
 
     frame.render_widget(input, area);
@@ -55,7 +56,8 @@ pub fn draw_input_dialog(frame: &mut Frame, app: &App, title: &str) {
     frame.set_cursor_position((cursor_x, cursor_y));
 }
 
-pub fn draw_confirm_dialog(frame: &mut Frame, message: &str) {
+pub fn draw_confirm_dialog(frame: &mut Frame, app: &App, message: &str) {
+    let theme = app.theme();
     let area = centered_rect(40, 5, frame.area());
     frame.render_widget(Clear, area);
 
@@ -64,12 +66,12 @@ pub fn draw_confirm_dialog(frame: &mut Frame, message: &str) {
         Line::from(Span::styled(
             message,
             Style::default()
-                .fg(Color::Yellow)
+                .fg(theme.dialog_text)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(Span::styled(
             "  y: Yes   n: No",
-            Style::default().fg(Color::Gray),
+            Style::default().fg(theme.text),
         )),
     ];
 
@@ -77,7 +79,7 @@ pub fn draw_confirm_dialog(frame: &mut Frame, message: &str) {
         Block::default()
             .title(" Confirm ")
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow)),
+            .border_style(Style::default().fg(theme.dialog_border)),
     );
 
     frame.render_widget(dialog, area);

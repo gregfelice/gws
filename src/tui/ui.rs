@@ -1,5 +1,5 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Tabs};
 use ratatui::Frame;
@@ -39,14 +39,15 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         }
         Dialog::EditNote => widgets::draw_input_dialog(frame, app, "Add Note"),
         Dialog::AddCategory => widgets::draw_input_dialog(frame, app, "Add Category"),
-        Dialog::ConfirmArchive => widgets::draw_confirm_dialog(frame, "Archive all done tasks?"),
-        Dialog::ConfirmDelete => widgets::draw_confirm_dialog(frame, "Delete this item?"),
-        Dialog::ConfirmDeleteCategory => widgets::draw_confirm_dialog(frame, "Delete this category and all its projects?"),
+        Dialog::ConfirmArchive => widgets::draw_confirm_dialog(frame, app, "Archive all done tasks?"),
+        Dialog::ConfirmDelete => widgets::draw_confirm_dialog(frame, app, "Delete this item?"),
+        Dialog::ConfirmDeleteCategory => widgets::draw_confirm_dialog(frame, app, "Delete this category and all its projects?"),
         Dialog::None => {}
     }
 }
 
 fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
+    let theme = app.theme();
     let titles = vec![" Agenda ", " Backlog ", " Settings "];
     let selected = match app.view {
         View::Agenda => 0,
@@ -59,13 +60,13 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
             Block::default()
                 .title(" GWS - Getting Work Sorted ")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::DarkGray)),
+                .border_style(Style::default().fg(theme.border)),
         )
         .select(selected)
-        .style(Style::default().fg(Color::Gray))
+        .style(Style::default().fg(theme.tab_inactive))
         .highlight_style(
             Style::default()
-                .fg(Color::Yellow)
+                .fg(theme.tab_active)
                 .add_modifier(Modifier::BOLD),
         );
 
@@ -73,6 +74,7 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
+    let theme = app.theme();
     let dirty_indicator = if app.dirty { " [modified]" } else { "" };
     let status = if app.status_msg.is_empty() {
         String::new()
@@ -87,7 +89,7 @@ fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
             Dialog::None => match app.view {
                 View::Agenda => "q:Quit  Tab:View  j/k:Nav  l:Center  m:Move  p:Promote  x:Demote  r:Auto  A:Archive  s:Save",
                 View::Backlog => "q:Quit  Tab:View  j/k:Nav  l:Center  Space:Fold  p/x:Cycle  a:Add  e:Edit  d:Del  m:Move  n:Note  s:Save",
-                View::Settings => "q:Quit  Tab:View  j/k:Nav  l:Center  a:Add  e:Rename  d:Del  m:Move  s:Save",
+                View::Settings => "q:Quit  Tab:View  j/k:Nav  l:Center  h/l:Theme  a:Add  e:Rename  d:Del  m:Move  s:Save",
             },
             Dialog::ConfirmArchive | Dialog::ConfirmDelete | Dialog::ConfirmDeleteCategory => {
                 "y:Yes  n/Esc:No"
@@ -99,16 +101,16 @@ fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
     let line = Line::from(vec![
         Span::styled(
             &status,
-            Style::default().fg(Color::Green),
+            Style::default().fg(theme.status),
         ),
         Span::styled(
             dirty_indicator,
-            Style::default().fg(Color::Red),
+            Style::default().fg(theme.status_error),
         ),
         Span::raw("  "),
         Span::styled(
             help,
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(theme.help_text),
         ),
     ]);
 

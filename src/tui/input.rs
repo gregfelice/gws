@@ -194,31 +194,40 @@ fn handle_settings_key(app: &mut App, key: KeyEvent) -> Action {
         return action;
     }
 
+    // Theme row: cursor == 0
+    let on_theme_row = app.settings_cursor == 0;
+
     match key.code {
         // Navigation
         KeyCode::Char('j') | KeyCode::Down => app.move_down(),
         KeyCode::Char('k') | KeyCode::Up => app.move_up(),
+
+        // Theme cycling (h/l/arrows) when on theme row; l centers otherwise
+        KeyCode::Char('h') | KeyCode::Left if on_theme_row => app.prev_theme(),
+        KeyCode::Char('l') | KeyCode::Right if on_theme_row => app.next_theme(),
         KeyCode::Char('l') => app.center_cursor(app.visible_height),
 
         // Add category
         KeyCode::Char('a') => app.open_dialog(Dialog::AddCategory),
 
-        // Rename category
+        // Rename category (only when on a category row)
         KeyCode::Char('e') => {
-            if let Some(cat) = app.doc.categories.get(app.settings_cursor) {
-                let name = cat.name.clone();
-                app.open_dialog_with_text(Dialog::EditCategory, &name);
+            if let Some(cat_idx) = app.settings_category_idx() {
+                if let Some(cat) = app.doc.categories.get(cat_idx) {
+                    let name = cat.name.clone();
+                    app.open_dialog_with_text(Dialog::EditCategory, &name);
+                }
             }
         }
 
-        // Delete category
+        // Delete category (only when on a category row)
         KeyCode::Char('d') => {
-            if !app.doc.categories.is_empty() {
+            if app.settings_category_idx().is_some() && !app.doc.categories.is_empty() {
                 app.open_dialog(Dialog::ConfirmDeleteCategory);
             }
         }
 
-        // Move mode
+        // Move mode (only when on a category row)
         KeyCode::Char('m') => app.start_move(),
 
         _ => {}

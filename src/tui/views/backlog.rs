@@ -6,17 +6,19 @@ use ratatui::Frame;
 
 use crate::app::App;
 use crate::model::{TaskState, TreeNodeKind};
+use crate::theme::Theme;
 
-fn dot_color(state: TaskState) -> Color {
+fn dot_color(theme: &Theme, state: TaskState) -> Color {
     match state {
-        TaskState::Todo => Color::Red,
-        TaskState::OnDeck => Color::Rgb(100, 149, 237),
-        TaskState::InProgress => Color::Yellow,
-        TaskState::Done => Color::Green,
+        TaskState::Todo => theme.state_todo,
+        TaskState::OnDeck => theme.state_ondeck,
+        TaskState::InProgress => theme.state_inprogress,
+        TaskState::Done => theme.state_done,
     }
 }
 
 pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
+    let theme = app.theme();
     let visible_height = area.height.saturating_sub(2) as usize; // borders
     let mut items: Vec<ListItem> = Vec::new();
 
@@ -44,39 +46,39 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
 
         let (line, style) = if is_selected && is_moving {
             let style = Style::default()
-                .fg(Color::Magenta)
+                .fg(theme.moving)
                 .add_modifier(Modifier::BOLD);
             (node.display.clone(), style)
         } else {
             match &node.kind {
                 TreeNodeKind::Category { .. } => {
                     let style = Style::default()
-                        .fg(Color::Yellow)
+                        .fg(theme.category)
                         .add_modifier(Modifier::BOLD);
                     (node.display.clone(), style)
                 }
                 TreeNodeKind::Project { .. } => {
                     let style = if is_selected {
                         Style::default()
-                            .fg(Color::White)
+                            .fg(theme.selected)
                             .add_modifier(Modifier::BOLD)
                     } else {
-                        Style::default().fg(Color::Cyan)
+                        Style::default().fg(theme.project)
                     };
                     (node.display.clone(), style)
                 }
                 TreeNodeKind::Task { .. } => {
                     let style = if is_selected {
                         Style::default()
-                            .fg(Color::White)
+                            .fg(theme.selected)
                             .add_modifier(Modifier::BOLD)
                     } else {
-                        Style::default().fg(Color::Gray)
+                        Style::default().fg(theme.text)
                     };
                     (node.display.clone(), style)
                 }
                 TreeNodeKind::Note { .. } => {
-                    let style = Style::default().fg(Color::DarkGray);
+                    let style = Style::default().fg(theme.text_dim);
                     (node.display.clone(), style)
                 }
             }
@@ -92,9 +94,9 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
 
         let prefix_style = if is_selected {
             if is_moving {
-                Style::default().fg(Color::Magenta)
+                Style::default().fg(theme.moving)
             } else {
-                Style::default().fg(Color::Yellow)
+                Style::default().fg(theme.cursor)
             }
         } else {
             Style::default()
@@ -109,7 +111,7 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
         if let Some(state) = task_state {
             spans.push(Span::styled(
                 format!("{} ", state.dot()),
-                Style::default().fg(dot_color(state)),
+                Style::default().fg(dot_color(theme, state)),
             ));
         }
 
@@ -121,7 +123,7 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     if items.is_empty() {
         items.push(ListItem::new(Line::from(Span::styled(
             "  No categories. Press 'a' to add one.",
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(theme.text_dim),
         ))));
     }
 
@@ -129,7 +131,7 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .title(" Backlog ")
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::DarkGray)),
+            .border_style(Style::default().fg(theme.border)),
     );
 
     let mut state = ListState::default();

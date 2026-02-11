@@ -4,6 +4,7 @@ use crate::engine;
 use crate::model::*;
 use crate::parser;
 use crate::serializer;
+use crate::theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
@@ -61,6 +62,9 @@ pub struct App {
     pub settings_cursor: usize,
     pub settings_scroll: usize,
 
+    // Theme
+    pub theme_index: usize,
+
     // Move mode
     pub moving: Option<MoveKind>,
 
@@ -93,6 +97,7 @@ impl App {
             collapse: CollapseState::new(),
             settings_cursor: 0,
             settings_scroll: 0,
+            theme_index: 0,
             moving: None,
             visible_height: 0,
             input_buffer: String::new(),
@@ -184,6 +189,21 @@ impl App {
     }
 
 
+    /// Total number of rows in the Settings view (1 theme row + categories).
+    pub fn settings_total(&self) -> usize {
+        1 + self.doc.categories.len()
+    }
+
+    /// Index of the category in doc.categories for the current settings_cursor,
+    /// or None if the cursor is on the theme row.
+    pub fn settings_category_idx(&self) -> Option<usize> {
+        if self.settings_cursor == 0 {
+            None
+        } else {
+            Some(self.settings_cursor - 1)
+        }
+    }
+
     // --- Navigation ---
 
     pub fn move_down(&mut self) {
@@ -207,8 +227,9 @@ impl App {
                 }
             }
             View::Settings => {
-                if !self.doc.categories.is_empty() {
-                    if self.settings_cursor < self.doc.categories.len() - 1 {
+                let total = self.settings_total();
+                if total > 0 {
+                    if self.settings_cursor < total - 1 {
                         self.settings_cursor += 1;
                     } else {
                         self.settings_cursor = 0;
@@ -239,11 +260,12 @@ impl App {
                 }
             }
             View::Settings => {
-                if !self.doc.categories.is_empty() {
+                let total = self.settings_total();
+                if total > 0 {
                     if self.settings_cursor > 0 {
                         self.settings_cursor -= 1;
                     } else {
-                        self.settings_cursor = self.doc.categories.len() - 1;
+                        self.settings_cursor = total - 1;
                     }
                 }
             }
@@ -271,8 +293,9 @@ impl App {
                 }
             }
             View::Settings => {
-                if !self.doc.categories.is_empty() {
-                    self.settings_cursor = self.doc.categories.len() - 1;
+                let total = self.settings_total();
+                if total > 0 {
+                    self.settings_cursor = total - 1;
                 }
             }
         }
@@ -281,10 +304,11 @@ impl App {
     /// Update scroll offset to keep cursor visible for the given view height.
     pub fn update_scroll(&mut self, visible_height: usize) {
         self.visible_height = visible_height;
+        let settings_total = self.settings_total();
         let (cursor, scroll, len) = match self.view {
             View::Agenda => (self.agenda_cursor, &mut self.agenda_scroll, self.agenda_items.len()),
             View::Backlog => (self.backlog_cursor, &mut self.backlog_scroll, self.tree_nodes.len()),
-            View::Settings => (self.settings_cursor, &mut self.settings_scroll, self.doc.categories.len()),
+            View::Settings => (self.settings_cursor, &mut self.settings_scroll, settings_total),
         };
         if len == 0 || visible_height == 0 {
             *scroll = 0;
@@ -686,11 +710,13 @@ impl App {
                 }
             }
             View::Settings => {
-                if !self.doc.categories.is_empty() {
-                    self.moving = Some(MoveKind::Category {
-                        original_cat_idx: self.settings_cursor,
-                    });
-                    self.status_msg = "Moving... j/k to reorder, Enter to accept, Esc to cancel".to_string();
+                if let Some(cat_idx) = self.settings_category_idx() {
+                    if cat_idx < self.doc.categories.len() {
+                        self.moving = Some(MoveKind::Category {
+                            original_cat_idx: cat_idx,
+                        });
+                        self.status_msg = "Moving... j/k to reorder, Enter to accept, Esc to cancel".to_string();
+                    }
                 }
             }
             View::Agenda => {
@@ -783,12 +809,13 @@ impl App {
                 }
             }
             MoveKind::Category { original_cat_idx } => {
-                let current = self.settings_cursor;
-                if current != original_cat_idx {
-                    let cat = self.doc.categories.remove(current);
-                    self.doc.categories.insert(original_cat_idx, cat);
-                    self.settings_cursor = original_cat_idx;
+                if let Some(current) = self.settings_category_idx() {
+                    if current != original_cat_idx {
+                        let cat = self.doc.categories.remove(current);
+                        self.doc.categories.insert(original_cat_idx, cat);
+                    }
                 }
+                self.settings_cursor = original_cat_idx + 1; // +1 for theme row
             }
             MoveKind::AgendaItem { original_idx } => {
                 // refresh_agenda() below rebuilds from doc, restoring original order
@@ -847,31 +874,39 @@ impl App {
         if new_name.is_empty() {
             return;
         }
-        if engine::rename_category(&mut self.doc, self.settings_cursor, new_name) {
-            self.dirty = true;
-            self.status_msg = "Category renamed".to_string();
-            self.rebuild_tree();
+        if let Some(cat_idx) = self.settings_category_idx() {
+            if engine::rename_category(&mut self.doc, cat_idx, new_name) {
+                self.dirty = true;
+                self.status_msg = "Category renamed".to_string();
+                self.rebuild_tree();
+            }
         }
     }
 
     pub fn delete_selected_category(&mut self) {
-        if engine::remove_category(&mut self.doc, self.settings_cursor) {
-            self.dirty = true;
-            self.status_msg = "Category deleted".to_string();
-            self.refresh_agenda();
-            self.rebuild_tree();
-            if !self.doc.categories.is_empty() && self.settings_cursor >= self.doc.categories.len() {
-                self.settings_cursor = self.doc.categories.len() - 1;
+        if let Some(cat_idx) = self.settings_category_idx() {
+            if engine::remove_category(&mut self.doc, cat_idx) {
+                self.dirty = true;
+                self.status_msg = "Category deleted".to_string();
+                self.refresh_agenda();
+                self.rebuild_tree();
+                // Clamp cursor to valid range
+                let total = self.settings_total();
+                if total > 0 && self.settings_cursor >= total {
+                    self.settings_cursor = total - 1;
+                }
             }
         }
     }
 
     pub fn rerank_category(&mut self, direction: i32) {
-        if let Some(new_idx) = engine::rerank_category(&mut self.doc, self.settings_cursor, direction) {
-            self.settings_cursor = new_idx;
-            self.dirty = true;
-            self.refresh_agenda();
-            self.rebuild_tree();
+        if let Some(cat_idx) = self.settings_category_idx() {
+            if let Some(new_idx) = engine::rerank_category(&mut self.doc, cat_idx, direction) {
+                self.settings_cursor = new_idx + 1; // +1 for theme row
+                self.dirty = true;
+                self.refresh_agenda();
+                self.rebuild_tree();
+            }
         }
     }
 
@@ -907,6 +942,22 @@ impl App {
         self.dialog = Dialog::None;
         self.input_buffer.clear();
         self.input_cursor = 0;
+    }
+
+    // --- Theme ---
+
+    pub fn theme(&self) -> &Theme {
+        &Theme::all()[self.theme_index]
+    }
+
+    pub fn next_theme(&mut self) {
+        let count = Theme::all().len();
+        self.theme_index = (self.theme_index + 1) % count;
+    }
+
+    pub fn prev_theme(&mut self) {
+        let count = Theme::all().len();
+        self.theme_index = (self.theme_index + count - 1) % count;
     }
 
     // Input buffer for dialogs
