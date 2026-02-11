@@ -74,6 +74,7 @@ gws --file ~/my-tasks.md     # Use a specific file
 | `j/k` | Navigate (wraps) |
 | `g/G` | Top / Bottom |
 | `l` | Center cursor |
+| `Enter` | Jump to task in Backlog view |
 | `m` | Move mode (reorder) |
 | `p` | Promote task |
 | `x` | Demote task |
