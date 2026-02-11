@@ -126,7 +126,112 @@ pub const SOLARIZED_LIGHT: Theme = Theme {
     dialog_placeholder: Color::Rgb(147, 161, 161),
 };
 
-const ALL_THEMES: &[Theme] = &[DEFAULT, DRACULA, CATPPUCCIN_MOCHA, SOLARIZED_LIGHT];
+pub const GRUVBOX_DARK: Theme = Theme {
+    name: "Gruvbox Dark",
+    border: Color::Rgb(80, 73, 69),        // bg3
+    tab_active: Color::Rgb(215, 153, 33),  // yellow
+    tab_inactive: Color::Rgb(146, 131, 116), // gray
+    status: Color::Rgb(152, 151, 26),      // green
+    status_error: Color::Rgb(204, 36, 29), // red
+    help_text: Color::Rgb(146, 131, 116),
+    cursor: Color::Rgb(215, 153, 33),      // yellow
+    text: Color::Rgb(235, 219, 178),       // fg
+    text_dim: Color::Rgb(146, 131, 116),   // gray
+    selected: Color::Rgb(251, 241, 199),   // fg0
+    moving: Color::Rgb(177, 98, 134),      // purple
+    state_todo: Color::Rgb(204, 36, 29),   // red
+    state_ondeck: Color::Rgb(69, 133, 136), // aqua
+    state_inprogress: Color::Rgb(215, 153, 33), // yellow
+    state_done: Color::Rgb(152, 151, 26),  // green
+    category: Color::Rgb(254, 128, 25),    // orange
+    project: Color::Rgb(69, 133, 136),     // aqua
+    dialog_border: Color::Rgb(215, 153, 33),
+    dialog_text: Color::Rgb(235, 219, 178),
+    dialog_placeholder: Color::Rgb(146, 131, 116),
+};
+
+pub const NORD: Theme = Theme {
+    name: "Nord",
+    border: Color::Rgb(76, 86, 106),       // nord3
+    tab_active: Color::Rgb(136, 192, 208), // nord8 (frost)
+    tab_inactive: Color::Rgb(76, 86, 106), // nord3
+    status: Color::Rgb(163, 190, 140),     // nord14 (green)
+    status_error: Color::Rgb(191, 97, 106), // nord11 (red)
+    help_text: Color::Rgb(76, 86, 106),
+    cursor: Color::Rgb(235, 203, 139),     // nord13 (yellow)
+    text: Color::Rgb(216, 222, 233),       // nord4 (snow storm)
+    text_dim: Color::Rgb(76, 86, 106),     // nord3
+    selected: Color::Rgb(236, 239, 244),   // nord6
+    moving: Color::Rgb(180, 142, 173),     // nord15 (purple)
+    state_todo: Color::Rgb(191, 97, 106),  // nord11 (red)
+    state_ondeck: Color::Rgb(129, 161, 193), // nord9 (frost)
+    state_inprogress: Color::Rgb(235, 203, 139), // nord13 (yellow)
+    state_done: Color::Rgb(163, 190, 140), // nord14 (green)
+    category: Color::Rgb(136, 192, 208),   // nord8
+    project: Color::Rgb(143, 188, 187),    // nord7 (frost)
+    dialog_border: Color::Rgb(136, 192, 208),
+    dialog_text: Color::Rgb(216, 222, 233),
+    dialog_placeholder: Color::Rgb(76, 86, 106),
+};
+
+pub const TOKYO_NIGHT: Theme = Theme {
+    name: "Tokyo Night",
+    border: Color::Rgb(56, 62, 90),        // comment
+    tab_active: Color::Rgb(122, 162, 247), // blue
+    tab_inactive: Color::Rgb(86, 95, 137), // dark5
+    status: Color::Rgb(158, 206, 106),     // green
+    status_error: Color::Rgb(247, 118, 142), // red
+    help_text: Color::Rgb(86, 95, 137),
+    cursor: Color::Rgb(224, 175, 104),     // yellow
+    text: Color::Rgb(192, 202, 245),       // foreground
+    text_dim: Color::Rgb(86, 95, 137),     // dark5
+    selected: Color::Rgb(192, 202, 245),
+    moving: Color::Rgb(187, 154, 247),     // purple
+    state_todo: Color::Rgb(247, 118, 142), // red
+    state_ondeck: Color::Rgb(125, 207, 255), // cyan
+    state_inprogress: Color::Rgb(224, 175, 104), // yellow
+    state_done: Color::Rgb(158, 206, 106), // green
+    category: Color::Rgb(122, 162, 247),   // blue
+    project: Color::Rgb(125, 207, 255),    // cyan
+    dialog_border: Color::Rgb(122, 162, 247),
+    dialog_text: Color::Rgb(192, 202, 245),
+    dialog_placeholder: Color::Rgb(86, 95, 137),
+};
+
+pub const ROSE_PINE: Theme = Theme {
+    name: "Rosé Pine",
+    border: Color::Rgb(110, 106, 134),     // muted
+    tab_active: Color::Rgb(196, 167, 231), // iris
+    tab_inactive: Color::Rgb(110, 106, 134), // muted
+    status: Color::Rgb(156, 207, 216),     // foam
+    status_error: Color::Rgb(235, 111, 146), // love
+    help_text: Color::Rgb(110, 106, 134),
+    cursor: Color::Rgb(246, 193, 119),     // gold
+    text: Color::Rgb(224, 222, 244),       // text
+    text_dim: Color::Rgb(110, 106, 134),   // muted
+    selected: Color::Rgb(224, 222, 244),
+    moving: Color::Rgb(235, 111, 146),     // love
+    state_todo: Color::Rgb(235, 111, 146), // love
+    state_ondeck: Color::Rgb(156, 207, 216), // foam
+    state_inprogress: Color::Rgb(246, 193, 119), // gold
+    state_done: Color::Rgb(156, 207, 216), // foam
+    category: Color::Rgb(196, 167, 231),   // iris
+    project: Color::Rgb(234, 154, 151),    // rose
+    dialog_border: Color::Rgb(196, 167, 231),
+    dialog_text: Color::Rgb(224, 222, 244),
+    dialog_placeholder: Color::Rgb(110, 106, 134),
+};
+
+const ALL_THEMES: &[Theme] = &[
+    DEFAULT,
+    DRACULA,
+    CATPPUCCIN_MOCHA,
+    SOLARIZED_LIGHT,
+    GRUVBOX_DARK,
+    NORD,
+    TOKYO_NIGHT,
+    ROSE_PINE,
+];
 
 impl Theme {
     pub fn all() -> &'static [Theme] {
