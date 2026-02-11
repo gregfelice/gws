@@ -20,7 +20,12 @@ impl TaskState {
     }
 
     pub fn dot(self) -> &'static str {
-        "●"
+        match self {
+            TaskState::Todo => "▲",
+            TaskState::OnDeck => "●",
+            TaskState::InProgress => "◆",
+            TaskState::Done => "■",
+        }
     }
 
     pub fn label(self) -> &'static str {
