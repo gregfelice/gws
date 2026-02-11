@@ -339,6 +339,33 @@ impl App {
         };
     }
 
+    /// Switch from Agenda to Backlog view, focusing on the same task.
+    pub fn jump_to_backlog_task(&mut self) {
+        let Some(item) = self.agenda_items.get(self.agenda_cursor) else {
+            return;
+        };
+        let cat_idx = item.category_idx;
+        let proj_idx = item.project_idx;
+        let task_idx = item.task_idx;
+
+        // Ensure parent category and project are expanded so the task is visible
+        self.collapse.collapsed_categories.remove(&cat_idx);
+        self.collapse.collapsed_projects.remove(&(cat_idx, proj_idx));
+        self.rebuild_tree();
+
+        // Find the matching task node in the tree
+        let target = TreeNodeKind::Task { cat_idx, proj_idx, task_idx };
+        for (i, node) in self.tree_nodes.iter().enumerate() {
+            if node.kind == target {
+                self.backlog_cursor = i;
+                break;
+            }
+        }
+
+        self.view = View::Backlog;
+        self.update_scroll(self.visible_height);
+    }
+
     // --- Backlog: toggle collapse ---
 
     pub fn toggle_collapse(&mut self) {

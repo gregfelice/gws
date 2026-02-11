@@ -76,6 +76,9 @@ fn handle_agenda_key(app: &mut App, key: KeyEvent) -> Action {
         KeyCode::Char('G') => app.move_bottom(),
         KeyCode::Char('l') => app.center_cursor(app.visible_height),
 
+        // Jump to backlog
+        KeyCode::Enter => app.jump_to_backlog_task(),
+
         // Move mode
         KeyCode::Char('m') => app.start_move(),
 
