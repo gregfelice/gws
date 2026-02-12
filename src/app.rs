@@ -6,6 +6,25 @@ use crate::parser;
 use crate::serializer;
 use crate::theme::Theme;
 
+/// Count section header rows between agenda items at indices `from..=to`.
+/// Each state transition (including the first item) produces one header row.
+fn section_headers_between(items: &[AgendaItem], from: usize, to: usize) -> usize {
+    if items.is_empty() || from >= items.len() {
+        return 0;
+    }
+    let to = to.min(items.len() - 1);
+    if from > to {
+        return 0;
+    }
+    let mut count = 1; // header for items[from]'s section
+    for i in (from + 1)..=to {
+        if items[i].task.state != items[i - 1].task.state {
+            count += 1;
+        }
+    }
+    count
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
     Agenda,
@@ -178,6 +197,11 @@ impl App {
 
     pub fn refresh_agenda(&mut self) {
         engine::auto_promote(&mut self.doc);
+        self.rebuild_agenda();
+    }
+
+    /// Rebuild agenda from doc without running auto_promote.
+    fn rebuild_agenda(&mut self) {
         self.agenda_items = engine::build_agenda(&self.doc);
         if !self.agenda_items.is_empty() {
             if self.agenda_cursor >= self.agenda_items.len() {
@@ -304,9 +328,37 @@ impl App {
     /// Update scroll offset to keep cursor visible for the given view height.
     pub fn update_scroll(&mut self, visible_height: usize) {
         self.visible_height = visible_height;
+
+        if self.view == View::Agenda {
+            // Agenda needs special handling to account for section header rows
+            let len = self.agenda_items.len();
+            if len == 0 || visible_height == 0 {
+                self.agenda_scroll = 0;
+                return;
+            }
+            let cursor = self.agenda_cursor;
+            if cursor < self.agenda_scroll {
+                self.agenda_scroll = cursor;
+            }
+            // Increase scroll until cursor fits within visible_height
+            loop {
+                let headers = section_headers_between(&self.agenda_items, self.agenda_scroll, cursor);
+                let display_row = (cursor - self.agenda_scroll) + headers;
+                if display_row < visible_height {
+                    break;
+                }
+                self.agenda_scroll += 1;
+                if self.agenda_scroll > cursor {
+                    self.agenda_scroll = cursor;
+                    break;
+                }
+            }
+            return;
+        }
+
         let settings_total = self.settings_total();
         let (cursor, scroll, len) = match self.view {
-            View::Agenda => (self.agenda_cursor, &mut self.agenda_scroll, self.agenda_items.len()),
+            View::Agenda => unreachable!(),
             View::Backlog => (self.backlog_cursor, &mut self.backlog_scroll, self.tree_nodes.len()),
             View::Settings => (self.settings_cursor, &mut self.settings_scroll, settings_total),
         };
@@ -427,11 +479,11 @@ impl App {
             let ti = item.task_idx;
             if engine::promote_task(&mut self.doc, ci, pi, ti) {
                 self.dirty = true;
-                // Update the agenda item in-place to reflect new state
-                let new_task = self.doc.categories[ci].projects[pi].tasks[ti].clone();
-                self.agenda_items[self.agenda_cursor].task = new_task;
                 self.status_msg = "Task promoted".to_string();
+                // Rebuild agenda without auto_promote to preserve the manual state change
+                self.rebuild_agenda();
                 self.rebuild_tree();
+                self.find_agenda_cursor(ci, pi, ti);
             }
         }
     }
@@ -443,12 +495,25 @@ impl App {
             let ti = item.task_idx;
             if engine::demote_task(&mut self.doc, ci, pi, ti) {
                 self.dirty = true;
-                // Update the agenda item in-place to reflect new state
-                let new_task = self.doc.categories[ci].projects[pi].tasks[ti].clone();
-                self.agenda_items[self.agenda_cursor].task = new_task;
                 self.status_msg = "Task demoted".to_string();
+                // Rebuild agenda without auto_promote to preserve the manual state change
+                self.rebuild_agenda();
                 self.rebuild_tree();
+                self.find_agenda_cursor(ci, pi, ti);
             }
+        }
+    }
+
+    /// Find an agenda item by its task address and move cursor to it.
+    fn find_agenda_cursor(&mut self, cat_idx: usize, proj_idx: usize, task_idx: usize) {
+        for (i, item) in self.agenda_items.iter().enumerate() {
+            if item.category_idx == cat_idx && item.project_idx == proj_idx && item.task_idx == task_idx {
+                self.agenda_cursor = i;
+                return;
+            }
+        }
+        if !self.agenda_items.is_empty() && self.agenda_cursor >= self.agenda_items.len() {
+            self.agenda_cursor = self.agenda_items.len() - 1;
         }
     }
 
@@ -766,7 +831,7 @@ impl App {
         }
     }
 
-    /// Rerank the selected agenda item.
+    /// Rerank the selected agenda item (only within the same section).
     fn rerank_agenda(&mut self, direction: i32) {
         if self.agenda_items.is_empty() {
             return;
@@ -777,6 +842,10 @@ impl App {
             return;
         }
         let new_idx = new_idx as usize;
+        // Prevent swapping across section boundaries
+        if self.agenda_items[cur].task.state != self.agenda_items[new_idx].task.state {
+            return;
+        }
         self.agenda_items.swap(cur, new_idx);
         self.agenda_cursor = new_idx;
     }

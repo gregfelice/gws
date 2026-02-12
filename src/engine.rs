@@ -77,7 +77,7 @@ pub fn demote_task(doc: &mut Document, cat_idx: usize, proj_idx: usize, task_idx
     false
 }
 
-/// Build flat agenda: OnDeck + InProgress tasks from active projects.
+/// Build flat agenda: all tasks from active projects, sorted by section.
 pub fn build_agenda(doc: &Document) -> Vec<AgendaItem> {
     let mut items: Vec<AgendaItem> = Vec::new();
 
@@ -87,20 +87,31 @@ pub fn build_agenda(doc: &Document) -> Vec<AgendaItem> {
                 continue;
             }
             for (task_idx, task) in project.tasks.iter().enumerate() {
-                if task.state == TaskState::InProgress || task.state == TaskState::OnDeck || task.state == TaskState::Done {
-                    items.push(AgendaItem {
-                        project_name: project.name.clone(),
-                        task: task.clone(),
-                        category_idx: cat_idx,
-                        project_idx: proj_idx,
-                        task_idx,
-                    });
-                }
+                items.push(AgendaItem {
+                    project_name: project.name.clone(),
+                    task: task.clone(),
+                    category_idx: cat_idx,
+                    project_idx: proj_idx,
+                    task_idx,
+                });
             }
         }
     }
 
+    // Stable sort by section order: Todo=0, InProgress=1, OnDeck=2, Done=3
+    items.sort_by_key(|item| section_order(item.task.state));
+
     items
+}
+
+/// Section display order for agenda grouping.
+pub fn section_order(state: TaskState) -> u8 {
+    match state {
+        TaskState::InProgress => 0,
+        TaskState::OnDeck => 1,
+        TaskState::Done => 2,
+        TaskState::Todo => 3,
+    }
 }
 
 /// Add a new Todo task to a project.
@@ -397,10 +408,13 @@ mod tests {
         auto_promote(&mut doc);
         let agenda = build_agenda(&doc);
 
-        // Alpha has 1 🔵, Beta has 1 🔵
-        assert_eq!(agenda.len(), 2);
-        assert_eq!(agenda[0].project_name, "Project Alpha");
-        assert_eq!(agenda[1].project_name, "Project Beta");
+        // Alpha: [OnDeck, Todo], Beta: [OnDeck, Todo] — inactive project excluded
+        // Sorted by section: OnDeck(1), Todo(3)
+        assert_eq!(agenda.len(), 4);
+        assert_eq!(agenda[0].task.state, TaskState::OnDeck);
+        assert_eq!(agenda[1].task.state, TaskState::OnDeck);
+        assert_eq!(agenda[2].task.state, TaskState::Todo);
+        assert_eq!(agenda[3].task.state, TaskState::Todo);
     }
 
     #[test]

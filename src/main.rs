@@ -340,9 +340,9 @@ mod integration_tests {
         assert!(doc.categories[0].projects[0].active);
         assert!(!doc.categories[0].projects[1].active);
 
-        // Agenda should work
+        // Agenda should work — Alpha has one 🔵 and one 🔴
         let agenda = engine::build_agenda(&doc);
-        assert_eq!(agenda.len(), 1); // one 🔵 task from Alpha
+        assert_eq!(agenda.len(), 2);
     }
 
     #[test]
