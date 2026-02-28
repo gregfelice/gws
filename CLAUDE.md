@@ -48,6 +48,13 @@ Plain markdown file with emoji state markers. See `sample_todo.md` for format.
 - No TODO/FIXME comments (clean codebase)
 - Atomic file saves (write to temp, rename)
 
+## Key Documentation
+
+- `README.md` — User-facing docs (features, keybindings, markdown format)
+- `docs/BACKLOG.md` — Prioritized backlog (P0-P3)
+- `sample_todo.md` — Example data file showing markdown format
+- `*.gs` files — Legacy Google Apps Script predecessor (reference only)
+
 ## Status
 
 MVP feature-complete (v0.1.0). Development paused.
